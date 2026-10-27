@@ -1,5 +1,5 @@
 import { Menu, X } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Brand } from './Brand'
 import { NavList } from './NavList'
 
@@ -11,6 +11,20 @@ type MobileHeaderProps = {
 export function MobileHeader({ currentRoute }: MobileHeaderProps) {
   const [isOpen, setIsOpen] = useState(false)
   const close = () => setIsOpen(false)
+
+  // While the menu is open, stop the page behind it scrolling and let Escape close it.
+  useEffect(() => {
+    if (!isOpen) return
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsOpen(false)
+    }
+    document.body.style.overflow = 'hidden'
+    window.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.body.style.overflow = ''
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [isOpen])
 
   return (
     <>
