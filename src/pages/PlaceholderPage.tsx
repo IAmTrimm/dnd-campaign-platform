@@ -1,3 +1,5 @@
+import { EmptyState } from '../components/ui/EmptyState'
+import { Panel } from '../components/ui/Panel'
 import type { NavItem } from '../config/navigation'
 
 type PlaceholderPageProps = {
@@ -6,14 +8,27 @@ type PlaceholderPageProps = {
 
 // Temporary page shown for each section until its real feature is built.
 export function PlaceholderPage({ item }: PlaceholderPageProps) {
+  const Icon = item.icon
+
   return (
-    <div className="mx-auto max-w-2xl rounded-lg border border-gold/30 bg-ink/70 p-10 text-center">
-      <div className="text-5xl">{item.icon}</div>
-      <h1 className="mt-4 font-display text-3xl font-bold text-gold-light">{item.label}</h1>
-      <p className="mt-2 text-lg text-parchment/80">{item.description}</p>
-      <p className="mt-6 text-parchment/50 italic">
-        This chapter has yet to be written. Check back soon.
-      </p>
+    <div className="space-y-8">
+      <header className="flex items-start gap-4">
+        <span className="grid size-12 shrink-0 place-items-center rounded-xl border border-line bg-panel text-gold shadow-lg shadow-black/30">
+          <Icon className="size-6" strokeWidth={1.75} />
+        </span>
+        <div>
+          <h1 className="font-display text-3xl font-semibold text-bone sm:text-4xl">{item.label}</h1>
+          <p className="mt-1 text-ash">{item.description}</p>
+        </div>
+      </header>
+      <div className="h-px bg-linear-to-r from-gold/25 via-line to-transparent" />
+      <Panel>
+        <EmptyState
+          icon={Icon}
+          title="This chapter has yet to be written"
+          text={`The ${item.label} section is being prepared and will be available in a future update.`}
+        />
+      </Panel>
     </div>
   )
 }

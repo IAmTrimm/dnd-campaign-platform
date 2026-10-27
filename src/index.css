@@ -1,18 +1,37 @@
 @import 'tailwindcss';
 
-/* Fantasy theme colours and fonts, usable as Tailwind classes (e.g. bg-parchment, font-display) */
+/* Theme colours and fonts, usable as Tailwind classes (e.g. bg-panel, text-ash, font-display) */
 @theme {
-  --font-display: 'Cinzel', Georgia, serif;
-  --font-body: 'EB Garamond', Georgia, serif;
+  --font-display: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 
-  --color-ink: #1a1410;
-  --color-night: #0f0c0a;
-  --color-parchment: #f1e6cf;
-  --color-gold: #c9a227;
-  --color-gold-light: #e6c766;
-  --color-ember: #a8322d;
+  --color-charcoal: #111214;
+  --color-slate: #17191d;
+  --color-panel: #1d1f24;
+  --color-panel-raised: #24272d;
+  --color-line: #2b2e35;
+
+  --color-bone: #e9e6e0;
+  --color-ash: #a3a4aa;
+  --color-faint: #6c6e76;
+
+  --color-burgundy: #862836;
+  --color-burgundy-light: #b13e4d;
+  --color-burgundy-dark: #44131b;
+  --color-gold: #c2a56e;
 }
 
 body {
-  @apply bg-night text-parchment font-body antialiased;
+  @apply bg-charcoal font-sans text-bone antialiased;
+}
+
+/* Fine film-grain texture over the whole app */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }

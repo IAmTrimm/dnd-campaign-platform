@@ -1,16 +1,18 @@
 import { Layout } from './components/layout/Layout'
 import { navItems } from './config/navigation'
 import { useHashRoute } from './hooks/useHashRoute'
-import { HomePage } from './pages/HomePage'
+import { DashboardPage } from './pages/DashboardPage'
 import { PlaceholderPage } from './pages/PlaceholderPage'
 
 function App() {
   const route = useHashRoute()
+  // The homepage is the Dashboard; unknown routes fall back to it too.
   const section = navItems.find((item) => item.path === route)
+  const activeRoute = section?.path ?? 'dashboard'
 
   return (
-    <Layout currentRoute={route}>
-      {section ? <PlaceholderPage item={section} /> : <HomePage />}
+    <Layout currentRoute={activeRoute}>
+      {section && section.path !== 'dashboard' ? <PlaceholderPage item={section} /> : <DashboardPage />}
     </Layout>
   )
 }

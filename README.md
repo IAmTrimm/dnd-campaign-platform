@@ -25,7 +25,7 @@ Open http://localhost:5173 in your browser. Changes to the code appear automatic
 
 ```
 src/
-  components/   Reusable UI pieces (layout/ holds the nav bar and page frame)
+  components/   Reusable UI pieces (layout/ = sidebar and page frame, ui/ = panels etc.)
   config/       Site settings, e.g. the navigation sections
   hooks/        Small reusable React hooks (e.g. page routing)
   pages/        One component per page
