@@ -22,6 +22,7 @@ export function MobileHeader({ currentRoute }: MobileHeaderProps) {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setIsOpen(false)
     }
+    const menuButton = menuButtonRef.current
     const background = [headerRef.current, document.getElementById('main-content')]
     document.body.style.overflow = 'hidden'
     background.forEach((el) => el?.setAttribute('inert', ''))
@@ -31,7 +32,7 @@ export function MobileHeader({ currentRoute }: MobileHeaderProps) {
       document.body.style.overflow = ''
       background.forEach((el) => el?.removeAttribute('inert'))
       window.removeEventListener('keydown', onKeyDown)
-      menuButtonRef.current?.focus()
+      menuButton?.focus()
     }
   }, [isOpen])
 
