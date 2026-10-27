@@ -8,10 +8,16 @@ You need [Node.js](https://nodejs.org/) (version 20 or newer) installed.
 
 ```bash
 npm install      # first time only: installs dependencies
-npm run dev      # starts the site at http://localhost:5173
+npm run dev      # starts the site at http://localhost:5173/dnd-campaign-platform/
 ```
 
-Open http://localhost:5173 in your browser. Changes to the code appear automatically. Press `Ctrl+C` in the terminal to stop.
+Open http://localhost:5173/dnd-campaign-platform/ in your browser. Changes to the code appear automatically. Press `Ctrl+C` in the terminal to stop.
+
+## Live site
+
+The site is published at https://iamtrimm.github.io/dnd-campaign-platform/
+
+Every push to the `main` branch automatically rebuilds and redeploys it (see `.github/workflows/deploy.yml`). You can follow progress on the repository's **Actions** tab.
 
 ## Other commands
 
