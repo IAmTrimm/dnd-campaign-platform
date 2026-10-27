@@ -119,7 +119,7 @@ export function DashboardPage() {
                     <Icon className="size-5" strokeWidth={1.75} />
                   </span>
                   {isDm ? (
-                    <span className="rounded-full border border-burgundy-light/30 px-2 py-0.5 text-[11px] font-medium text-burgundy-light">
+                    <span className="rounded-full border border-burgundy-light/30 px-2 py-0.5 text-[11px] font-medium text-[#d46b79]">
                       DM only
                     </span>
                   ) : (
