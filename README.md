@@ -39,3 +39,5 @@ src/
 ```
 
 To add a navigation section, add an entry to `src/config/navigation.ts`.
+
+Database migrations for the future Supabase backend are in `supabase/migrations/`, explained in [docs/data-model.md](docs/data-model.md).
