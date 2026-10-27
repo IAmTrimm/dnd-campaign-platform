@@ -40,4 +40,15 @@ src/
 
 To add a navigation section, add an entry to `src/config/navigation.ts`.
 
-Database migrations for the future Supabase backend are in `supabase/migrations/`, explained in [docs/data-model.md](docs/data-model.md).
+## Database (Supabase)
+
+Migrations are in `supabase/migrations/`, explained in [docs/data-model.md](docs/data-model.md). They are applied to the live project with the Supabase CLI, never automatically from GitHub:
+
+```bash
+npx supabase@2.120.0 login                                      # once per computer (browser sign-in)
+npx supabase@2.120.0 link --project-ref hjzslqjqgbaqqqoypjln    # once per checkout
+npx supabase@2.120.0 db push --dry-run                          # preview what would change
+npx supabase@2.120.0 db push                                    # apply
+```
+
+On Windows PowerShell, use `npx.cmd` instead of `npx`. Never use `db reset` against the live project.
