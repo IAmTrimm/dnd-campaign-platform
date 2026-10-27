@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+
+/* Fantasy theme colours and fonts, usable as Tailwind classes (e.g. bg-parchment, font-display) */
+@theme {
+  --font-display: 'Cinzel', Georgia, serif;
+  --font-body: 'EB Garamond', Georgia, serif;
+
+  --color-ink: #1a1410;
+  --color-night: #0f0c0a;
+  --color-parchment: #f1e6cf;
+  --color-gold: #c9a227;
+  --color-gold-light: #e6c766;
+  --color-ember: #a8322d;
+}
+
+body {
+  @apply bg-night text-parchment font-body antialiased;
+}
