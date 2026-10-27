@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { AmbientBackground } from './AmbientBackground'
 import { MobileHeader } from './MobileHeader'
 import { Sidebar } from './Sidebar'
 
@@ -21,11 +22,7 @@ export function Layout({ currentRoute, children }: LayoutProps) {
       >
         Skip to content
       </a>
-      {/* Atmospheric lighting behind the page */}
-      <div
-        aria-hidden
-        className="pointer-events-none fixed inset-0 bg-[radial-gradient(ellipse_70%_45%_at_75%_-5%,rgba(134,40,54,0.2),transparent_65%),radial-gradient(ellipse_50%_35%_at_10%_105%,rgba(194,165,110,0.06),transparent_70%)]"
-      />
+      <AmbientBackground />
       <Sidebar currentRoute={currentRoute} />
       <MobileHeader currentRoute={currentRoute} />
       <div className="relative md:pl-64">

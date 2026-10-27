@@ -2,6 +2,7 @@ import { Menu, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Brand } from './Brand'
 import { NavList } from './NavList'
+import { UserMenu } from './UserMenu'
 
 type MobileHeaderProps = {
   currentRoute: string
@@ -79,8 +80,11 @@ export function MobileHeader({ currentRoute }: MobileHeaderProps) {
               </button>
             </div>
             <div className="mx-5 h-px bg-linear-to-r from-transparent via-gold/25 to-transparent" />
-            <div className="px-3 py-6">
+            <div className="flex-1 overflow-y-auto px-3 py-6">
               <NavList currentRoute={currentRoute} onNavigate={close} />
+            </div>
+            <div className="border-t border-line px-4 py-3">
+              <UserMenu />
             </div>
           </aside>
         </div>

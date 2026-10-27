@@ -1,5 +1,6 @@
 import { Brand } from './Brand'
 import { NavList } from './NavList'
+import { UserMenu } from './UserMenu'
 
 type SidebarProps = {
   currentRoute: string
@@ -16,8 +17,8 @@ export function Sidebar({ currentRoute }: SidebarProps) {
       <div className="flex-1 overflow-y-auto px-3 py-6">
         <NavList currentRoute={currentRoute} />
       </div>
-      <div className="border-t border-line px-5 py-4 text-xs text-faint">
-        A personal campaign companion
+      <div className="border-t border-line px-4 py-3">
+        <UserMenu />
       </div>
     </aside>
   )

@@ -52,3 +52,18 @@ npx supabase@2.120.0 db push                                    # apply
 ```
 
 On Windows PowerShell, use `npx.cmd` instead of `npx`. Never use `db reset` against the live project.
+
+## Player accounts (DM only)
+
+Players sign in with a username and password. There is no public sign-up; the DM creates accounts on their own computer:
+
+```bash
+node scripts/accounts.mjs create aria "Aria Vel'dran"   # new account; password copied to clipboard
+node scripts/accounts.mjs reset-password aria            # new password; copied to clipboard
+node scripts/accounts.mjs list                           # show all accounts
+node scripts/auth-smoke-test.mjs                         # test login end to end with a temporary account
+```
+
+These scripts need the Supabase **secret** key in `scripts/.env.local` (`SUPABASE_SECRET_KEY=...`). That file is ignored by Git. Never commit it or put the secret key anywhere in `src/`.
+
+Behind the scenes, a username like `aria` is stored as `aria@dnd-campaign-platform.invalid`. The `.invalid` domain is reserved and can never receive email. Accounts created with a real email (such as the original DM account) can sign in with that email instead.
