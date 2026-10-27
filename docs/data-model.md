@@ -12,7 +12,7 @@ erDiagram
 
 | Table              | What it holds                                                                              |
 | ------------------ | ------------------------------------------------------------------------------------------ |
-| `profiles`         | One row per login account: `username`, `display_name`. Created automatically with the account. |
+| `profiles`         | One row per real person (player or DM): `username`, `display_name`. Created automatically with their account. |
 | `worlds`           | A setting (e.g. a homebrew world). Has one `owner_id`.                                     |
 | `campaigns`        | A campaign inside a world.                                                                 |
 | `campaign_members` | Who is in each campaign, with role `dm` or `player`. One person can join many campaigns.  |
@@ -25,31 +25,51 @@ erDiagram
 | **DM**     | `campaign_members.role = 'dm'`         | Manage their campaign, including adding and removing members.      |
 | **Player** | `campaign_members.role = 'player'`     | See their campaign's player-visible content and shared world lore. |
 
-Members of any campaign in a world can see that world's shared lore, so no separate "world members" table is needed.
+Members of any campaign in a world can see that world's *published* shared lore, so no separate "world members" table is needed.
+
+## Accounts
+
+- **One account per real person.** A player keeps the same username and password across all their campaigns and characters.
+- **Characters** (a later task) will be separate records linked to the player's profile, so one player can have many characters.
+- **Passwords** are created by the DM, reasonably secure, and given to each player privately.
+- **Usernames:** players log in with a friendly username and never need to give an email address. How that maps onto Supabase's login system is decided in B007. Don't assume made-up email addresses on real-looking domains.
 
 ## Future content (Codex, NPCs, locations, quests, sessions)
 
-Each future content table follows the same pattern, so world sharing and campaign privacy work the same way everywhere:
+Each future content table follows the same pattern, so world sharing and campaign privacy work the same way everywhere. Example for the Codex:
 
 ```sql
-create table public.npcs (
+create table public.codex_entries (
   id          uuid primary key default gen_random_uuid(),
   world_id    uuid not null references public.worlds (id) on delete cascade,
-  campaign_id uuid,                                  -- null = shared world lore
-  visibility  text not null default 'players'        -- 'players' or 'dm'
-              check (visibility in ('players', 'dm')),
-  name        text not null,
+  campaign_id uuid,                                  -- null = world lore, reusable by every campaign
+  visibility  text not null default 'draft'
+              check (visibility in ('draft', 'dm', 'players')),
+  title       text not null,
   -- ...feature-specific columns...
   foreign key (campaign_id, world_id) references public.campaigns (id, world_id) on delete cascade
 );
+
+-- A world secret revealed to one campaign only (e.g. what that party discovered)
+create table public.codex_entry_reveals (
+  entry_id    uuid not null references public.codex_entries (id) on delete cascade,
+  campaign_id uuid not null references public.campaigns (id) on delete cascade,
+  primary key (entry_id, campaign_id)
+);
 ```
 
-- `campaign_id` empty: shared with every campaign in the world.
-- `campaign_id` set: private to that campaign; other campaigns never see it.
-- `visibility = 'dm'`: hidden from players, even within the right campaign.
-- The two-column foreign key stops a campaign's content being attached to the wrong world.
+| Entry                                           | Who can see it                                                    |
+| ----------------------------------------------- | ----------------------------------------------------------------- |
+| `draft` (unpublished)                           | Only the world Owner (or, for campaign entries, that campaign's DM). |
+| `dm` (DM secret)                                | The Owner and DMs. Players never see it…                          |
+| …plus a row in `codex_entry_reveals`            | …except players of that one campaign, once they've discovered it. |
+| `players`, no `campaign_id`                     | Players in every campaign of the world (common knowledge).        |
+| `players`, with `campaign_id`                   | Only that campaign's players (campaign-specific discoveries and notes). |
 
-Session timelines would simply be campaign-specific (`campaign_id` required).
+- One world entry is written once and reused by every campaign. Each campaign only sees what is published, or what it has discovered.
+- The two-column foreign key stops a campaign's content being attached to the wrong world.
+- NPCs, locations and quests can copy the same columns, and add their own reveals table only if needed.
+- Session timelines are simply campaign-specific (`campaign_id` required).
 
 ## Linking the first DM account (B006 onwards)
 
