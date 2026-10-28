@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase'
 import { LIST_COLUMNS, type Campaign, type CodexListItem, type CodexScope, type World } from './types'
 
 export type EditableScope = CodexScope & { label: string; worldName: string }
+export type NoteScope = { campaignId: string | null; label: string; audience: string }
 
 // Loads everything the Codex screens need. The database's access rules decide
 // what comes back; the permission helpers below only decide which buttons to
@@ -65,7 +66,23 @@ export function useCodex() {
         editableScopes.push({ worldId: world.id, campaignId: campaign.id, worldName: world.name, label: `${prefix(world)}${campaign.name} only` })
       }
     }
-    return { canEdit, editableScopes, isEditor: editableScopes.length > 0 }
+    // Which private DM note sections this user has on an article (same rule as
+    // private.can_access_codex_note): the Owner note, plus one per campaign they run.
+    const noteScopes = (entry: { world_id: string; campaign_id: string | null }): NoteScope[] => {
+      const scopes: NoteScope[] = []
+      if (ownedWorlds.has(entry.world_id)) {
+        scopes.push({ campaignId: null, label: 'Owner notes', audience: 'Only you, as the world Owner' })
+      }
+      for (const campaign of campaigns) {
+        const relevant = campaign.world_id === entry.world_id && (!entry.campaign_id || entry.campaign_id === campaign.id)
+        if (relevant && (dmCampaignIds.has(campaign.id) || ownedWorlds.has(campaign.world_id))) {
+          scopes.push({ campaignId: campaign.id, label: `${campaign.name} notes`, audience: `The DMs of ${campaign.name} and the world Owner` })
+        }
+      }
+      return scopes
+    }
+
+    return { canEdit, editableScopes, noteScopes, isEditor: editableScopes.length > 0 }
   }, [worlds, campaigns, dmCampaignIds, userId])
 
   const scopeLabel = useCallback(

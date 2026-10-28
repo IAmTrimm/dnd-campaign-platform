@@ -1,8 +1,9 @@
-import { ArrowLeft, Eye, EyeOff, PencilLine, Save, X } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Lock, PencilLine, Save, X } from 'lucide-react'
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { navigateTo } from '../../hooks/useHashRoute'
 import { supabase } from '../../lib/supabase'
+import { DmNotesPanel } from './DmNotesPanel'
 import { StatusBadge } from './StatusBadge'
 import { RichTextEditor } from './RichTextEditor'
 import { CATEGORIES, normaliseTags, type CodexCategory, type CodexEntry, type CodexVisibility } from './types'
@@ -237,6 +238,17 @@ export function ArticleEditor({ codex, entry }: ArticleEditorProps) {
           </div>
         </aside>
       </div>
+
+      {entry ? (
+        <DmNotesPanel entry={entry} codex={codex} />
+      ) : (
+        codex.noteScopes({ world_id: worldId, campaign_id: campaignId }).length > 0 && (
+          <p className="flex items-center gap-2 rounded-xl border border-dashed border-burgundy/35 px-4 py-3 text-sm text-ash">
+            <Lock className="size-4 text-gold" />
+            Save the article first to add private DM notes.
+          </p>
+        )
+      )}
 
       <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-slate/95 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-10 lg:px-10">
         {error && (

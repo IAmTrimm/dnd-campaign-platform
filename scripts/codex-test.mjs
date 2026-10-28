@@ -1,4 +1,4 @@
-// Live Codex access checks (B011). Creates a temporary world, two campaigns and
+// Live Codex access checks (B011, plus private DM notes from B013). Creates a temporary world, two campaigns and
 // accounts, adds Codex entries through the public API as the people who would
 // really add them, checks who can see and change what, then deletes everything.
 //
@@ -109,9 +109,39 @@ try {
   check('DM A can publish their campaign draft', ((await db('dm_a').from('codex_entries').update({ visibility: 'players' }).eq('id', e.a_draft.id).select()).data ?? []).length === 1)
   check('...and player A then sees it', (await sees('p_a')).includes('a_draft'))
 
+  // ---- Private DM notes (B013) ----
+  const addNote = (role, entry, campaignId, body) =>
+    db(role).from('codex_notes').insert({ entry_id: entry.id, world_id: worldId, campaign_id: campaignId, body })
+  check('Owner writes an Owner-only note', !(await addNote('owner', e.w_pub, null, '<p>owner note</p>')).error)
+  check('Owner writes a note on the discovered world secret', !(await addNote('owner', e.w_secret, null, '<p>tower note</p>')).error)
+  check('DM A writes a campaign A note on shared world lore', !(await addNote('dm_a', e.w_pub, A, '<p>A note</p>')).error)
+  check('DM B writes a campaign B note on the same article', !(await addNote('dm_b', e.w_pub, B, '<p>B note</p>')).error)
+  check('DM A writes a note on their campaign secret', !(await addNote('dm_a', e.a_secret, A, '<p>A secret note</p>')).error)
+  const notes = async (role) => ((await db(role).from('codex_notes').select('body')).data ?? []).map((n) => n.body.replace(/<\/?p>/g, '')).sort().join(',')
+  check('Owner reads every note in their world', await notes('owner') === 'A note,A secret note,B note,owner note,tower note', await notes('owner'))
+  check('DM A reads only campaign A notes', await notes('dm_a') === 'A note,A secret note', await notes('dm_a'))
+  check('DM B reads only campaign B notes', await notes('dm_b') === 'B note', await notes('dm_b'))
+  for (const role of ['p_a', 'p_b', 'p_ab', 'outsider']) check(`${role} reads no notes`, await notes(role) === '', await notes(role) || 'none')
+  check('DM cannot write the Owner-only note', !!(await addNote('dm_a', e.w_secret, null, 'x')).error)
+  check('DM cannot write another campaign\'s note', !!(await addNote('dm_a', e.w_pub, B, 'x')).error)
+  check('Players cannot write notes', !!(await addNote('p_a', e.a_pub, A, 'x')).error)
+  check('Players cannot change notes', ((await db('p_a').from('codex_notes').update({ body: 'hacked' }).eq('entry_id', e.w_pub.id).select()).data ?? []).length === 0)
+  must(await db('dm_a').from('codex_entries').update({ visibility: 'players' }).eq('id', e.a_secret.id), 'publish a_secret')
+  check('Publishing an article shows players the article but not its notes',
+    (await sees('p_a')).includes('a_secret') && await notes('p_a') === '')
+  check('Campaign B discovered the world secret, but its player sees no notes',
+    (await sees('p_b')).includes('w_secret') && await notes('p_b') === '')
+  const playerToken = (await db('p_ab').auth.getSession()).data.session.access_token
+  const directNotes = await fetch(`${SUPABASE_URL}/rest/v1/codex_notes?select=body`, {
+    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${playerToken}` },
+  })
+  check('Direct HTTP request for notes as a player returns nothing', directNotes.ok && (await directNotes.json()).length === 0)
+  const anonNotes = await fetch(`${SUPABASE_URL}/rest/v1/codex_notes?select=body`, { headers: { apikey: SUPABASE_PUBLISHABLE_KEY } })
+  check('Direct HTTP request for notes while signed out is refused', !anonNotes.ok, `HTTP ${anonNotes.status}`)
+
   // ---- Signed out and direct requests ----
   const anon = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, noPersist)
-  for (const table of ['codex_entries', 'codex_links', 'codex_reveals']) {
+  for (const table of ['codex_entries', 'codex_links', 'codex_reveals', 'codex_notes']) {
     const res = await anon.from(table).select('*')
     check(`Signed out: ${table} is denied`, !!res.error, res.error?.message)
   }

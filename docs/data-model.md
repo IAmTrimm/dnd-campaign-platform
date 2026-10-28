@@ -62,6 +62,7 @@ erDiagram
 - **Editing:** the Owner edits world entries and links; a campaign's DM edits that campaign's entries and links and records its discoveries. Players can't change the Codex. Entries can't be moved between worlds or campaigns.
 - **Links** only show when the link and *both* entries are visible, so a secret relationship or a hidden entry never leaks through a link.
 - **Stable IDs:** every entry keeps its `id` forever. Future map markers and timeline events should reference `codex_entries (id, world_id)`. This two-column reference guarantees they stay in the same world, as `codex_links` and `codex_reveals` already do.
+- **Private DM notes (B013):** `codex_notes` holds rich-text notes on an article, separate from its summary and description ([`20261028000004_codex_notes.sql`](../supabase/migrations/20261028000004_codex_notes.sql)). Each article can have one **Owner note** (`campaign_id` empty, world Owner only) and one note **per campaign** (that campaign's DMs and the Owner, and only on articles that DM can see). Access never depends on the article's visibility or discoveries, so publishing or revealing an article never exposes its notes. Players have no access.
 - **Extending:** new categories can be added with `alter type public.codex_category add value '...'`. New feature tables follow the same `world_id` / `campaign_id` / `visibility` pattern and must add their own grants and policies.
 
 ## Linking the first DM account (B006 onwards)
