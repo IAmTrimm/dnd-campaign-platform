@@ -34,42 +34,35 @@ Members of any campaign in a world can see that world's *published* shared lore,
 - **Passwords** are created by the DM, reasonably secure, and given to each player privately.
 - **Usernames:** players log in with a friendly username and never need to give an email address. How that maps onto Supabase's login system is decided in B007. Don't assume made-up email addresses on real-looking domains.
 
-## Future content (Codex, NPCs, locations, quests, sessions)
+## Codex (B011)
 
-Each future content table follows the same pattern, so world sharing and campaign privacy work the same way everywhere. Example for the Codex:
+Defined in [`20261028000003_codex.sql`](../supabase/migrations/20261028000003_codex.sql) and checked by `node scripts/codex-test.mjs`.
 
-```sql
-create table public.codex_entries (
-  id          uuid primary key default gen_random_uuid(),
-  world_id    uuid not null references public.worlds (id) on delete cascade,
-  campaign_id uuid,                                  -- null = world lore, reusable by every campaign
-  visibility  text not null default 'draft'
-              check (visibility in ('draft', 'dm', 'players')),
-  title       text not null,
-  -- ...feature-specific columns...
-  foreign key (campaign_id, world_id) references public.campaigns (id, world_id) on delete cascade
-);
-
--- A world secret revealed to one campaign only (e.g. what that party discovered)
-create table public.codex_entry_reveals (
-  entry_id    uuid not null references public.codex_entries (id) on delete cascade,
-  campaign_id uuid not null references public.campaigns (id) on delete cascade,
-  primary key (entry_id, campaign_id)
-);
+```mermaid
+erDiagram
+  worlds ||--o{ codex_entries : "holds"
+  campaigns |o--o{ codex_entries : "optionally owns"
+  codex_entries ||--o{ codex_links : "from / to"
+  codex_entries ||--o{ codex_reveals : "discovered by"
+  campaigns ||--o{ codex_reveals : "discovers"
 ```
 
-| Entry                                           | Who can see it                                                    |
-| ----------------------------------------------- | ----------------------------------------------------------------- |
-| `draft` (unpublished)                           | Only the world Owner (or, for campaign entries, that campaign's DM). |
-| `dm` (DM secret)                                | The Owner and DMs. Players never see it…                          |
-| …plus a row in `codex_entry_reveals`            | …except players of that one campaign, once they've discovered it. |
-| `players`, no `campaign_id`                     | Players in every campaign of the world (common knowledge).        |
-| `players`, with `campaign_id`                   | Only that campaign's players (campaign-specific discoveries and notes). |
+| Table           | What it holds                                                                                                         |
+| --------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `codex_entries` | One entry: `category` (`npc`, `location`, `faction`, `item`, `lore`), `name`, `summary`, `description`, `tags`, `visibility`. `campaign_id` empty = world lore. |
+| `codex_links`   | A named relationship between two entries in the same world (`relation`, e.g. "lives in", "member of"), with its own `visibility`. |
+| `codex_reveals` | A DM-only entry that one campaign's party has discovered.                                                             |
 
-- One world entry is written once and reused by every campaign. Each campaign only sees what is published, or what it has discovered.
-- The two-column foreign key stops a campaign's content being attached to the wrong world.
-- NPCs, locations and quests can copy the same columns, and add their own reveals table only if needed.
-- Session timelines are simply campaign-specific (`campaign_id` required).
+| Visibility             | World entry (no campaign)                                   | Campaign entry                         |
+| ---------------------- | ----------------------------------------------------------- | -------------------------------------- |
+| `draft` (default)      | World Owner only                                            | That campaign's DM (and the Owner)     |
+| `dm` (secret)          | Owner and every DM in the world; players only once revealed to their campaign | That campaign's DM; its players only once revealed |
+| `players` (published)  | Players in every campaign of the world                      | That campaign's players only           |
+
+- **Editing:** the Owner edits world entries and links; a campaign's DM edits that campaign's entries and links and records its discoveries. Players can't change the Codex. Entries can't be moved between worlds or campaigns.
+- **Links** only show when the link and *both* entries are visible, so a secret relationship or a hidden entry never leaks through a link.
+- **Stable IDs:** every entry keeps its `id` forever. Future map markers and timeline events should reference `codex_entries (id, world_id)`. This two-column reference guarantees they stay in the same world, as `codex_links` and `codex_reveals` already do.
+- **Extending:** new categories can be added with `alter type public.codex_category add value '...'`. New feature tables follow the same `world_id` / `campaign_id` / `visibility` pattern and must add their own grants and policies.
 
 ## Linking the first DM account (B006 onwards)
 
