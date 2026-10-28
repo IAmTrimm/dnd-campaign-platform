@@ -78,9 +78,20 @@ try {
   const reuse = await createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, noPersist).auth.refreshSession({ refresh_token: refreshToken })
   check('signed-out session cannot be revived', !!reuse.error, reuse.error?.message)
 
+  // A second device that stays signed in while the DM resets the password.
+  const otherDevice = browserClient(new Map())
+  await otherDevice.auth.signInWithPassword({ email, password })
+
   const newPassword = randomBytes(18).toString('base64url')
   const reset = await admin.auth.admin.updateUserById(userId, { password: newPassword })
   check('DM can reset the password', !reset.error, reset.error?.message)
+  // Supabase ends sessions on a password change by itself; revoke_user_sessions is a safety net.
+  const revoked = await admin.rpc('revoke_user_sessions', { target_user: userId })
+  check('sign-out safety net runs for the DM', !revoked.error, revoked.error?.message)
+  const stale = await otherDevice.auth.refreshSession()
+  check('after a reset, other devices can no longer renew their login', !!stale.error, stale.error?.message)
+  const playerCall = await otherDevice.rpc('revoke_user_sessions', { target_user: userId })
+  check('players cannot call the sign-out function', !!playerCall.error, playerCall.error?.message)
   const oldLogin = await pub.auth.signInWithPassword({ email, password })
   check('old password stops working', !!oldLogin.error)
   const newLogin = await pub.auth.signInWithPassword({ email, password: newPassword })

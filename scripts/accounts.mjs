@@ -171,6 +171,11 @@ if (command === 'reset-password') {
   const password = generatePassword()
   const { error } = await admin.auth.admin.updateUserById(profile.id, { password })
   if (error) fail(`Could not reset the password: ${error.message}`)
+  // Supabase already ends all sessions when a password changes; this makes sure
+  // of it, so an old or stolen login can't carry on.
+  const { error: revokeError } = await admin.rpc('revoke_user_sessions', { target_user: profile.id })
   console.log(`\n  New password set for "${username}".`)
+  if (revokeError) console.log(`  WARNING: could not confirm sign-out of other devices: ${revokeError.message}`)
+  else console.log('  Signed out on all devices (any open page loses access within an hour at most).')
   await deliverPassword(password, username)
 }
