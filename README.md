@@ -70,6 +70,7 @@ node scripts/auth-smoke-test.mjs                         # test login end to end
 node scripts/access-test.mjs                             # test who can see/change what, with temporary data
 node scripts/codex-test.mjs                              # test Codex visibility rules, with temporary data
 node scripts/dashboard-test.mjs                          # test the Dashboard keeps campaigns apart, with temporary data
+node scripts/images-test.mjs                             # test private Codex images, with temporary data and files
 ```
 
 These scripts need the Supabase **secret** key in `scripts/.env.local` (`SUPABASE_SECRET_KEY=...`). That file is ignored by Git. Never commit it or put the secret key anywhere in `src/`.

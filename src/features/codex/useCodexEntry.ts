@@ -10,7 +10,7 @@ export function useCodexEntry(id: string) {
     let cancelled = false
     supabase
       .from('codex_entries')
-      .select('id, world_id, campaign_id, category, name, summary, description, tags, visibility, created_at, updated_at')
+      .select('id, world_id, campaign_id, category, name, summary, description, image_path, image_alt, tags, visibility, created_at, updated_at')
       .eq('id', id)
       .maybeSingle()
       .then(({ data }) => {

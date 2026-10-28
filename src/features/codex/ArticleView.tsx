@@ -1,6 +1,8 @@
 import { ArrowLeft, BookX, LoaderCircle, PencilLine, Tag } from 'lucide-react'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Panel } from '../../components/ui/Panel'
+import { CodexImage } from './CodexImage'
+import { imageShape } from './codexImages'
 import { DmNotesPanel } from './DmNotesPanel'
 import { RelatedEntries } from './RelatedEntries'
 import { RichTextViewer } from './RichTextViewer'
@@ -30,13 +32,16 @@ export function ArticleView({ id, codex }: { id: string; codex: CodexData }) {
 
   const { icon: Icon, label } = categoryOf(entry.category)
   const canEdit = codex.canEdit({ worldId: entry.world_id, campaignId: entry.campaign_id })
+  const shape = entry.image_path ? imageShape(entry.category) : null
+  const image = entry.image_path && <CodexImage path={entry.image_path} alt={entry.image_alt} name={entry.name} category={entry.category} />
   const updated = new Date(entry.updated_at).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
 
   return (
     <div className="space-y-6">
       <article className="relative overflow-hidden rounded-2xl border border-line bg-panel/60 shadow-2xl shadow-black/30">
         <div aria-hidden className="absolute inset-x-0 top-0 h-48 bg-[radial-gradient(ellipse_70%_100%_at_50%_0%,rgba(134,40,54,0.18),transparent_70%)]" />
-        <div className="relative px-5 py-6 sm:px-10 sm:py-10">
+        {shape === 'cover' && image}
+        <div className="@container relative px-5 py-6 sm:px-10 sm:py-10">
           <a href="#/codex" className="mb-6 inline-flex items-center gap-1.5 text-sm text-ash hover:text-bone lg:hidden">
             <ArrowLeft className="size-4" />
             All articles
@@ -66,19 +71,24 @@ export function ArticleView({ id, codex }: { id: string; codex: CodexData }) {
             )}
           </div>
 
-          <h1 className="mt-5 font-display text-4xl leading-tight font-semibold text-bone sm:text-5xl">{entry.name}</h1>
-          {entry.summary && <p className="mt-3 max-w-2xl text-lg leading-relaxed text-ash italic">{entry.summary}</p>}
+          <div className="mt-5 flex flex-col-reverse gap-6 @xl:flex-row @xl:items-start">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-4xl leading-tight font-semibold text-bone sm:text-5xl">{entry.name}</h1>
+              {entry.summary && <p className="mt-3 max-w-2xl text-lg leading-relaxed text-ash italic">{entry.summary}</p>}
 
-          {entry.tags.length > 0 && (
-            <ul className="mt-4 flex flex-wrap gap-1.5" aria-label="Tags">
-              {entry.tags.map((tag) => (
-                <li key={tag} className="inline-flex items-center gap-1 rounded-md bg-white/[0.05] px-2 py-0.5 text-xs text-ash">
-                  <Tag className="size-3" />
-                  {tag}
-                </li>
-              ))}
-            </ul>
-          )}
+              {entry.tags.length > 0 && (
+                <ul className="mt-4 flex flex-wrap gap-1.5" aria-label="Tags">
+                  {entry.tags.map((tag) => (
+                    <li key={tag} className="inline-flex items-center gap-1 rounded-md bg-white/[0.05] px-2 py-0.5 text-xs text-ash">
+                      <Tag className="size-3" />
+                      {tag}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            {shape === 'portrait' && image}
+          </div>
 
           <div className="my-7 h-px bg-linear-to-r from-gold/30 via-line to-transparent" />
 

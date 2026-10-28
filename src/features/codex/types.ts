@@ -19,6 +19,8 @@ export type CodexListItem = {
 
 export type CodexEntry = CodexListItem & {
   description: string | null
+  image_path: string | null // file in the private codex-images bucket
+  image_alt: string | null
   created_at: string
 }
 

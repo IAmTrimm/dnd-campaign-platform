@@ -4,6 +4,7 @@ import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { navigateTo } from '../../hooks/useHashRoute'
 import { supabase } from '../../lib/supabase'
 import { DmNotesPanel } from './DmNotesPanel'
+import { ImageField } from './ImageField'
 import { StatusBadge } from './StatusBadge'
 import { RichTextEditor } from './RichTextEditor'
 import { CATEGORIES, normaliseTags, type CodexCategory, type CodexEntry, type CodexVisibility } from './types'
@@ -47,6 +48,7 @@ export function ArticleEditor({ codex, entry }: ArticleEditorProps) {
   const [description, setDescription] = useState<string | null>(entry?.description ?? null)
   const [tags, setTags] = useState<string[]>(entry?.tags ?? [])
   const [tagDraft, setTagDraft] = useState('')
+  const [imageAlt, setImageAlt] = useState(entry?.image_alt ?? '')
   const [confirming, setConfirming] = useState<CodexVisibility | 'discard' | null>(null)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -57,7 +59,7 @@ export function ArticleEditor({ codex, entry }: ArticleEditorProps) {
   const worldName = codex.worlds.find((w) => w.id === worldId)?.name ?? 'this world'
   const campaignName = campaignId ? (codex.campaigns.find((c) => c.id === campaignId)?.name ?? 'this campaign') : null
 
-  const snapshot = JSON.stringify([name, category, summary, description, tags, scopeIndex])
+  const snapshot = JSON.stringify([name, category, summary, description, tags, scopeIndex, imageAlt])
   const [initialSnapshot] = useState(snapshot)
   const dirty = snapshot !== initialSnapshot || tagDraft.trim() !== ''
 
@@ -100,7 +102,12 @@ export function ArticleEditor({ codex, entry }: ArticleEditorProps) {
           .insert({ ...fields, world_id: worldId, campaign_id: campaignId, visibility: 'draft' })
           .select('id')
           .maybeSingle()
-      : await supabase.from('codex_entries').update({ ...fields, visibility }).eq('id', entry.id).select('id').maybeSingle()
+      : await supabase
+          .from('codex_entries')
+          .update({ ...fields, visibility, image_alt: imageAlt.trim() || null })
+          .eq('id', entry.id)
+          .select('id')
+          .maybeSingle()
     setSaving(false)
     setConfirming(null)
     if (result.error || !result.data) {
@@ -241,6 +248,15 @@ export function ArticleEditor({ codex, entry }: ArticleEditorProps) {
             </div>
             <span className="mt-1.5 block text-xs text-faint">Press Enter or comma to add a tag.</span>
           </div>
+
+          {entry ? (
+            <ImageField entry={entry} alt={imageAlt} onAltChange={setImageAlt} />
+          ) : (
+            <p className="text-xs leading-relaxed text-faint">
+              <span className="block text-sm font-medium text-bone">Image</span>
+              Save the article first to add a portrait or cover image.
+            </p>
+          )}
 
           <p className="flex gap-2 rounded-lg border border-line bg-white/[0.02] px-3 py-2.5 text-xs leading-relaxed text-faint">
             <Link2 className="mt-0.5 size-3.5 shrink-0 text-gold" />
