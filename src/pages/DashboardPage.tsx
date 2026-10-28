@@ -10,7 +10,8 @@ import {
   ScrollText,
   Users,
 } from 'lucide-react'
-import { navItems } from '../config/navigation'
+import { useAuth } from '../auth/AuthContext'
+import { visibleNavItems } from '../config/navigation'
 import { EmptyState } from '../components/ui/EmptyState'
 import { Panel } from '../components/ui/Panel'
 
@@ -22,9 +23,10 @@ const stats = [
   { label: 'Codex entries', icon: BookOpen },
 ]
 
-const sections = navItems.filter((item) => item.path !== 'dashboard')
-
 export function DashboardPage() {
+  const { isDm: showDmSections } = useAuth()
+  const sections = visibleNavItems(showDmSections).filter((item) => item.path !== 'dashboard')
+
   return (
     <div className="space-y-10">
       {/* Hero */}
@@ -96,7 +98,7 @@ export function DashboardPage() {
       <section>
         <h2 className="text-lg font-semibold text-bone">Explore the campaign</h2>
         <p className="mt-1 text-sm text-ash">Everything your party needs, in one place.</p>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={`mt-5 grid gap-4 sm:grid-cols-2 ${showDmSections ? 'lg:grid-cols-3' : ''}`}>
           {sections.map((item) => {
             const Icon = item.icon
             const isDm = item.group === 'dm'

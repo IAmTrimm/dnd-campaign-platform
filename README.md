@@ -61,7 +61,12 @@ Players sign in with a username and password. There is no public sign-up; the DM
 node scripts/accounts.mjs create aria "Aria Vel'dran"   # new account; password copied to clipboard
 node scripts/accounts.mjs reset-password aria            # new password; copied to clipboard
 node scripts/accounts.mjs list                           # show all accounts
+node scripts/accounts.mjs campaigns                      # show campaigns and their members
+node scripts/accounts.mjs add-member aria "The Campaign Name"        # add as a player
+node scripts/accounts.mjs add-member aria "The Campaign Name" dm     # add (or promote) as a DM
+node scripts/accounts.mjs remove-member aria "The Campaign Name"
 node scripts/auth-smoke-test.mjs                         # test login end to end with a temporary account
+node scripts/access-test.mjs                             # test who can see/change what, with temporary data
 ```
 
 These scripts need the Supabase **secret** key in `scripts/.env.local` (`SUPABASE_SECRET_KEY=...`). That file is ignored by Git. Never commit it or put the secret key anywhere in `src/`.

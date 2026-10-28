@@ -4,6 +4,9 @@
 //   node scripts/accounts.mjs create <username> [display name]
 //   node scripts/accounts.mjs reset-password <username>
 //   node scripts/accounts.mjs list
+//   node scripts/accounts.mjs campaigns
+//   node scripts/accounts.mjs add-member <username> "<campaign name>" [player|dm]
+//   node scripts/accounts.mjs remove-member <username> "<campaign name>"
 //
 // New passwords are generated randomly and copied to the clipboard rather than
 // printed, so they don't end up in terminal history or logs.
@@ -18,7 +21,10 @@ import { SUPABASE_URL } from '../src/config/supabase.ts'
 const usage = `Usage:
   node scripts/accounts.mjs create <username> [display name]
   node scripts/accounts.mjs reset-password <username>
-  node scripts/accounts.mjs list`
+  node scripts/accounts.mjs list
+  node scripts/accounts.mjs campaigns
+  node scripts/accounts.mjs add-member <username> "<campaign name>" [player|dm]
+  node scripts/accounts.mjs remove-member <username> "<campaign name>"`
 
 function fail(message) {
   console.error(`\n  ${message}\n`)
@@ -80,6 +86,63 @@ if (command === 'list') {
   const { data, error } = await admin.from('profiles').select('username, display_name, created_at').order('username')
   if (error) fail(error.message)
   console.table(data.map((p) => ({ username: p.username, 'display name': p.display_name, created: p.created_at.slice(0, 10) })))
+  process.exit(0)
+}
+
+if (command === 'campaigns') {
+  const { data, error } = await admin
+    .from('campaigns')
+    .select('name, worlds(name), campaign_members(role, profiles(username))')
+    .order('name')
+  if (error) fail(error.message)
+  for (const campaign of data) {
+    console.log(`\n  ${campaign.name}  (world: ${campaign.worlds.name})`)
+    const members = campaign.campaign_members
+      .map((m) => `${m.profiles.username}${m.role === 'dm' ? ' (DM)' : ''}`)
+      .sort()
+    console.log(`    ${members.length ? members.join(', ') : 'no members yet'}`)
+  }
+  console.log()
+  process.exit(0)
+}
+
+// Finds one campaign by its exact name (ignoring upper/lower case).
+async function findCampaign(name) {
+  if (!name) fail(usage)
+  const { data, error } = await admin.from('campaigns').select('id, name').ilike('name', name.replace(/[\\%_]/g, '\\$&'))
+  if (error) fail(error.message)
+  if (data.length === 0) fail(`No campaign called "${name}". Run "campaigns" to see them all.`)
+  if (data.length > 1) fail(`More than one campaign is called "${name}". Rename one first.`)
+  return data[0]
+}
+
+if (command === 'add-member' || command === 'remove-member') {
+  const memberName = normaliseUsername(rawUsername ?? '')
+  const profile = await findProfile(admin, memberName)
+  if (!profile) fail(`No account found with the username "${memberName}".`)
+  const [campaignName, roleArg] = command === 'add-member' && ['player', 'dm'].includes(nameParts.at(-1)?.toLowerCase())
+    ? [nameParts.slice(0, -1).join(' '), nameParts.at(-1).toLowerCase()]
+    : [nameParts.join(' '), 'player']
+  const campaign = await findCampaign(campaignName.trim())
+
+  if (command === 'add-member') {
+    // Adding someone already in the campaign just updates their role.
+    const { error } = await admin
+      .from('campaign_members')
+      .upsert({ campaign_id: campaign.id, user_id: profile.id, role: roleArg }, { onConflict: 'campaign_id,user_id' })
+    if (error) fail(`Could not add the member: ${error.message}`)
+    console.log(`\n  ${profile.username} is now ${roleArg === 'dm' ? 'a DM' : 'a player'} in "${campaign.name}".\n`)
+  } else {
+    const { data, error } = await admin
+      .from('campaign_members')
+      .delete()
+      .eq('campaign_id', campaign.id)
+      .eq('user_id', profile.id)
+      .select()
+    if (error) fail(`Could not remove the member: ${error.message}`)
+    if (data.length === 0) fail(`${profile.username} is not in "${campaign.name}".`)
+    console.log(`\n  ${profile.username} has been removed from "${campaign.name}".\n`)
+  }
   process.exit(0)
 }
 

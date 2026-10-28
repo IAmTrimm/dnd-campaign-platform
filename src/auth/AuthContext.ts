@@ -4,6 +4,9 @@ import { createContext, useContext } from 'react'
 export type AuthState = {
   session: Session | null
   loading: boolean
+  // True for a campaign DM or world Owner. Only used to tidy up the interface;
+  // the database's access rules are what actually protect DM-only data.
+  isDm: boolean
   // Returns an error message to show, or null on success.
   signIn: (identifier: string, password: string, keepSignedIn: boolean) => Promise<string | null>
   signOut: () => Promise<void>

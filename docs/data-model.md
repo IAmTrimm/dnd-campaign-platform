@@ -79,6 +79,18 @@ create table public.codex_entry_reveals (
 
 Real world and campaign names are only entered in Supabase, never committed to this public repository.
 
-## Access rules
+## Access rules (B008)
 
-Row level security is switched on for every table but no rules exist yet, so the public API can read nothing. The access rules above will be written as Supabase policies in a later task.
+Defined in [`20261028000001_access_policies.sql`](../supabase/migrations/20261028000001_access_policies.sql) and checked by `node scripts/access-test.mjs`.
+
+| Who                 | Can see                                                        | Can change                                                              |
+| ------------------- | -------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| Signed out          | Nothing                                                        | Nothing                                                                 |
+| Any signed-in user  | Their own profile                                              | Their own display name                                                  |
+| Player              | Their campaigns, those campaigns' world, fellow members and their profiles | Nothing else                                                 |
+| Campaign DM         | As a player                                                    | Rename the campaign; add, remove and change roles of its members        |
+| World Owner         | Their world, all its campaigns, members and their profiles     | Rename the world; create campaigns; everything a DM can do in its campaigns |
+
+- Nobody can delete worlds or campaigns, change a world's owner, move a campaign to another world or change a username from the website. The DM's local scripts (secret key) can.
+- Membership checks are small `security definer` functions in a `private` schema, which the API doesn't expose. This avoids recursive policies.
+- Signed-out visitors have no table privileges at all. **New tables get no access by default**, so each new feature's migration must `grant` exactly what it needs and add its own policies, following the visibility pattern above.

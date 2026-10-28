@@ -1,4 +1,5 @@
-import { navGroups, navItems } from '../../config/navigation'
+import { useAuth } from '../../auth/AuthContext'
+import { navGroups, visibleNavItems } from '../../config/navigation'
 
 type NavListProps = {
   currentRoute: string
@@ -7,15 +8,18 @@ type NavListProps = {
 
 // The grouped list of section links, shared by the desktop sidebar and mobile menu.
 export function NavList({ currentRoute, onNavigate }: NavListProps) {
+  const items = visibleNavItems(useAuth().isDm)
+  const groups = navGroups.filter((group) => items.some((item) => item.group === group.id))
+
   return (
     <nav className="space-y-7">
-      {navGroups.map((group) => (
+      {groups.map((group) => (
         <div key={group.id}>
           <p className="px-3 pb-2 text-[11px] font-medium tracking-[0.14em] text-faint uppercase">
             {group.label}
           </p>
           <ul className="space-y-0.5">
-            {navItems
+            {items
               .filter((item) => item.group === group.id)
               .map((item) => {
                 const Icon = item.icon

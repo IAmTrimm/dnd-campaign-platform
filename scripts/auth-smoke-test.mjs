@@ -68,8 +68,9 @@ try {
 
   const tables = ['profiles', 'worlds', 'campaigns', 'campaign_members']
   const counts = await Promise.all(tables.map((t) => reloaded.from(t).select('*', { count: 'exact', head: true })))
-  check('signed-in user still sees no database rows (lockdown)', counts.every((c) => c.count === 0),
-    tables.map((t, i) => `${t}=${counts[i].count}`).join(', '))
+  // With no campaign memberships, a user may only see their own profile (B008 rules).
+  check('signed-in user with no campaigns sees only their own profile',
+    counts.map((c) => c.count).join() === '1,0,0,0', tables.map((t, i) => `${t}=${counts[i].count}`).join(', '))
 
   const refreshToken = refreshed.data.session?.refresh_token
   await reloaded.auth.signOut()

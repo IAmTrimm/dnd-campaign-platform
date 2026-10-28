@@ -9,6 +9,8 @@ const WRONG_DETAILS = 'Incorrect username or password.'
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
+  const [isDm, setIsDm] = useState(false)
+  const userId = session?.user.id
 
   // Restores a saved session on load, then follows sign-ins, sign-outs and token refreshes.
   useEffect(() => {
@@ -18,6 +20,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     })
     return () => data.subscription.unsubscribe()
   }, [])
+
+  // Is the signed-in user a DM of any campaign, or the Owner of any world?
+  useEffect(() => {
+    if (!userId) return
+    let cancelled = false
+    Promise.all([
+      supabase.from('campaign_members').select('*', { count: 'exact', head: true }).eq('user_id', userId).eq('role', 'dm'),
+      supabase.from('worlds').select('*', { count: 'exact', head: true }).eq('owner_id', userId),
+    ]).then(([dmOf, owns]) => {
+      if (!cancelled) setIsDm((dmOf.count ?? 0) + (owns.count ?? 0) > 0)
+    })
+    return () => {
+      cancelled = true
+      setIsDm(false)
+    }
+  }, [userId])
 
   const signIn: AuthState['signIn'] = async (identifier, password, keepSignedIn) => {
     const value = identifier.trim()
@@ -41,6 +59,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ session, loading, signIn, signOut }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ session, loading, isDm, signIn, signOut }}>{children}</AuthContext.Provider>
   )
 }

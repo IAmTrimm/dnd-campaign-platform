@@ -15,6 +15,11 @@ export const navGroups = [
   { id: 'dm', label: 'Dungeon Master' },
 ] as const
 
+// Sections shown to the signed-in user: DM-only sections are hidden from players.
+export function visibleNavItems(isDm: boolean): NavItem[] {
+  return navItems.filter((item) => item.group !== 'dm' || isDm)
+}
+
 export const navItems: NavItem[] = [
   {
     path: 'dashboard',
