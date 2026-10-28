@@ -41,3 +41,71 @@ body::after {
   outline: 2px solid var(--color-gold);
   outline-offset: 2px;
 }
+
+/* Codex article text (shared by the reader and the editor) */
+.codex-prose {
+  color: var(--color-bone);
+  font-size: 1.0625rem;
+  line-height: 1.75;
+}
+.codex-prose .ProseMirror > * + * {
+  margin-top: 0.9em;
+}
+.codex-prose h2 {
+  margin-top: 1.6em;
+  font-family: var(--font-display);
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.codex-prose h3 {
+  margin-top: 1.4em;
+  font-size: 1.15rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.codex-prose .ProseMirror > :first-child {
+  margin-top: 0;
+}
+.codex-prose strong {
+  font-weight: 600;
+  color: #fff;
+}
+.codex-prose u {
+  text-underline-offset: 3px;
+}
+.codex-prose ul {
+  list-style: disc;
+  padding-left: 1.4em;
+}
+.codex-prose ol {
+  list-style: decimal;
+  padding-left: 1.4em;
+}
+.codex-prose li::marker {
+  color: var(--color-gold);
+}
+.codex-prose li + li {
+  margin-top: 0.3em;
+}
+.codex-prose blockquote {
+  border-left: 2px solid color-mix(in srgb, var(--color-gold) 50%, transparent);
+  padding-left: 1em;
+  font-style: italic;
+  color: var(--color-ash);
+}
+.codex-prose hr {
+  margin: 2em 0;
+  border-color: var(--color-line);
+}
+
+/* Editing area */
+.codex-editor .ProseMirror {
+  min-height: 18rem;
+}
+.codex-editor .ProseMirror:focus-visible {
+  outline: none;
+}
+.codex-editor .ProseMirror hr.ProseMirror-selectednode {
+  border-color: var(--color-gold);
+}

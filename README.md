@@ -33,8 +33,9 @@ Every push to the `main` branch automatically rebuilds and redeploys it (see `.g
 src/
   components/   Reusable UI pieces (layout/ = sidebar and page frame, ui/ = panels etc.)
   config/       Site settings, e.g. the navigation sections
+  features/     Larger sections with their own components and data (e.g. codex/)
   hooks/        Small reusable React hooks (e.g. page routing)
-  pages/        One component per page
+  pages/        One component per simple page
   index.css     Tailwind setup and the fantasy theme colours/fonts
 ```
 

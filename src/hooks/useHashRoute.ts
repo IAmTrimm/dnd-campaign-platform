@@ -17,3 +17,8 @@ export function useHashRoute() {
 
   return route
 }
+
+// Go to a route, e.g. navigateTo('codex/123').
+export function navigateTo(route: string) {
+  window.location.hash = `#/${route}`
+}
