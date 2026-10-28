@@ -1,4 +1,4 @@
-// Live Codex access checks (B011, plus private DM notes from B013). Creates a temporary world, two campaigns and
+// Live Codex access checks (B011, private DM notes from B013 and relationships from B014). Creates a temporary world, two campaigns and
 // accounts, adds Codex entries through the public API as the people who would
 // really add them, checks who can see and change what, then deletes everything.
 //
@@ -138,6 +138,73 @@ try {
   check('Direct HTTP request for notes as a player returns nothing', directNotes.ok && (await directNotes.json()).length === 0)
   const anonNotes = await fetch(`${SUPABASE_URL}/rest/v1/codex_notes?select=body`, { headers: { apikey: SUPABASE_PUBLISHABLE_KEY } })
   check('Direct HTTP request for notes while signed out is refused', !anonNotes.ok, `HTTP ${anonNotes.status}`)
+
+  // ---- Relationships between articles (B014) ----
+  Object.assign(e, {
+    w_guild: await add('owner', null, 'faction', 'w_guild', 'players'),
+    w_sword: await add('owner', null, 'item', 'w_sword', 'players'),
+    a_inn: await add('dm_a', A, 'location', 'a_inn', 'players'),
+    b_npc: await add('dm_b', B, 'npc', 'b_npc', 'players'),
+  })
+  const link = (role, campaignId, from, to, relation, visibility) =>
+    db(role).from('codex_links').insert({ world_id: worldId, campaign_id: campaignId, from_entry_id: from.id, to_entry_id: to.id, relation, visibility }).select('id').single()
+  const made = {}
+  for (const [key, role, campaignId, from, to, relation, visibility] of [
+    ['located', 'owner', null, e.w_guild, e.w_pub, 'located in', 'players'],
+    ['stolen', 'owner', null, e.w_sword, e.w_guild, 'stolen from', 'dm'],
+    ['founded', 'owner', null, e.w_guild, e.w_draft, 'founded in', 'players'],
+    ['member', 'dm_a', A, e.a_pub, e.w_guild, 'member of', 'players'],
+    ['owns', 'dm_a', A, e.a_pub, e.w_sword, 'owns', 'players'],
+    ['secretly', 'dm_a', A, e.a_pub, e.a_inn, 'secretly owns', 'dm'],
+    ['spy', 'dm_b', B, e.b_npc, e.w_guild, 'spy in', 'players'],
+  ]) {
+    const res = await link(role, campaignId, from, to, relation, visibility)
+    check(`${role} links ${from.id === e.a_pub.id ? 'a_pub' : relation} (${relation}, ${visibility})`, !res.error, res.error?.message)
+    made[key] = res.data?.id
+  }
+  const newRelations = ['located in', 'stolen from', 'founded in', 'member of', 'owns', 'secretly owns', 'spy in']
+  const rels = async (role) =>
+    ((await db(role).from('codex_links').select('relation').in('relation', newRelations)).data ?? []).map((r) => r.relation).sort().join(',')
+  const expectedLinks = {
+    owner: ['founded in,located in,member of,owns,secretly owns,spy in,stolen from', 'every relationship in their world'],
+    dm_a: ['located in,member of,owns,secretly owns,stolen from', 'world + campaign A links; not the link to a world draft or campaign B'],
+    dm_b: ['located in,spy in,stolen from', 'world + campaign B links; nothing of A'],
+    p_a: ['located in,member of,owns', 'published links only; no secret links, no link to a draft, nothing of B'],
+    p_b: ['located in,spy in', 'world + own campaign published links'],
+    p_ab: ['located in,member of,owns,spy in', 'both campaigns\' published links'],
+    outsider: ['', 'nothing'],
+  }
+  for (const [role, [want, why]] of Object.entries(expectedLinks)) {
+    const got = await rels(role)
+    check(`Links, ${role}: ${why}`, got === want, got === want ? '' : `got ${got || 'none'}`)
+  }
+  check('Players cannot add relationships', !!(await link('p_a', A, e.a_pub, e.a_inn, 'zz x', 'players')).error)
+  check('DMs cannot add world-wide relationships', !!(await link('dm_a', null, e.w_pub, e.w_guild, 'zz x', 'players')).error)
+  check('DMs cannot add relationships to another campaign', !!(await link('dm_a', B, e.b_npc, e.w_pub, 'zz x', 'players')).error)
+  check('Players cannot change relationships', ((await db('p_a').from('codex_links').update({ relation: 'hacked' }).eq('id', made.member).select()).data ?? []).length === 0)
+  check('DM B cannot change campaign A\'s relationship', ((await db('dm_b').from('codex_links').update({ relation: 'hacked' }).eq('id', made.member).select()).data ?? []).length === 0)
+  check('DM B cannot remove campaign A\'s relationship', ((await db('dm_b').from('codex_links').delete().eq('id', made.member).select()).data ?? []).length === 0)
+  check('DMs cannot change the Owner\'s world relationship', ((await db('dm_a').from('codex_links').update({ relation: 'hacked' }).eq('id', made.located).select()).data ?? []).length === 0)
+  check('A relationship can\'t be re-pointed at another article', !!(await db('dm_a').from('codex_links').update({ to_entry_id: e.w_pub.id }).eq('id', made.owns)).error)
+  check('DM A makes their "owns" link secret',
+    ((await db('dm_a').from('codex_links').update({ relation: 'owns', visibility: 'dm' }).eq('id', made.owns).select()).data ?? []).length === 1)
+  check('...and player A no longer sees it', await rels('p_a') === 'located in,member of', await rels('p_a'))
+  must(await db('dm_a').from('codex_links').update({ visibility: 'players' }).eq('id', made.owns), 'republish owns')
+  must(await db('owner').from('codex_entries').update({ name: 'w_guild renamed' }).eq('id', e.w_guild.id), 'rename')
+  const memberLink = (await db('p_a').from('codex_links').select('to_entry_id').eq('id', made.member).maybeSingle()).data
+  const renamed = (await db('p_a').from('codex_entries').select('name').eq('id', memberLink?.to_entry_id ?? '').maybeSingle()).data
+  check('Renaming an article keeps its relationships pointing at it', renamed?.name === 'w_guild renamed', renamed?.name)
+  check('Unpublishing an article hides its relationships from players',
+    !(await db('owner').from('codex_entries').update({ visibility: 'draft' }).eq('id', e.w_sword.id)).error && await rels('p_a') === 'located in,member of', await rels('p_a'))
+  must(await db('owner').from('codex_entries').update({ visibility: 'players' }).eq('id', e.w_sword.id), 'republish sword')
+  check('DM A removes their secret relationship', ((await db('dm_a').from('codex_links').delete().eq('id', made.secretly).select()).data ?? []).length === 1)
+  must(await db('owner').from('codex_entries').delete().eq('id', e.w_sword.id), 'delete sword')
+  check('Deleting an article removes its relationships', !(await rels('owner')).includes('owns') && !(await rels('owner')).includes('stolen from'), await rels('owner'))
+  const linkToken = (await db('p_ab').auth.getSession()).data.session.access_token
+  const directLink = await fetch(`${SUPABASE_URL}/rest/v1/codex_links?select=relation&id=in.(${made.stolen},${made.founded})`, {
+    headers: { apikey: SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${linkToken}` },
+  })
+  check('Direct HTTP request for secret or hidden relationships as a player returns nothing', directLink.ok && (await directLink.json()).length === 0)
 
   // ---- Signed out and direct requests ----
   const anon = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, noPersist)

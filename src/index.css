@@ -98,6 +98,21 @@ body::after {
   margin: 2em 0;
   border-color: var(--color-line);
 }
+/* Links to other Codex articles */
+.codex-prose a.codex-link {
+  color: var(--color-gold);
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--color-gold) 40%, transparent);
+  text-underline-offset: 3px;
+}
+.codex-prose a.codex-link[href]:hover {
+  text-decoration-color: var(--color-gold);
+}
+.codex-prose a.codex-link-missing {
+  color: var(--color-ash);
+  text-decoration-style: dashed;
+  text-decoration-color: var(--color-faint);
+}
 
 /* Editing area */
 .codex-editor .ProseMirror {

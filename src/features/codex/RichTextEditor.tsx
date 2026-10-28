@@ -6,6 +6,8 @@ import {
   Heading2,
   Heading3,
   Italic,
+  Link2,
+  Link2Off,
   List,
   ListOrdered,
   Minus,
@@ -16,18 +18,32 @@ import {
   Underline,
   Undo2,
 } from 'lucide-react'
+import { useState } from 'react'
+import { EntryPicker } from './EntryPicker'
 import { codexExtensions } from './richText'
+import type { CodexListItem } from './types'
+
+// Lets the writer link phrases to other Codex articles.
+export type ArticleLinking = {
+  targets: CodexListItem[] // articles that can be linked to
+  entryIds: Set<string> // every article the writer can open
+  describe: (entry: CodexListItem) => string
+}
 
 type RichTextEditorProps = {
   initialHtml: string
   // Called with the article HTML, or null when the editor is empty.
   onChange: (html: string | null) => void
   labelledBy: string
+  linking?: ArticleLinking
 }
 
-export function RichTextEditor({ initialHtml, onChange, labelledBy }: RichTextEditorProps) {
+export function RichTextEditor({ initialHtml, onChange, labelledBy, linking }: RichTextEditorProps) {
+  // The editor is created once; the article list doesn't change while editing.
+  const [entryIds] = useState(linking?.entryIds)
+  const [picking, setPicking] = useState(false)
   const editor = useEditor({
-    extensions: codexExtensions,
+    extensions: codexExtensions({ exists: (id) => !!entryIds?.has(id), reading: false }),
     content: initialHtml,
     editorProps: {
       attributes: { 'aria-labelledby': labelledBy, 'aria-multiline': 'true', role: 'textbox' },
@@ -37,13 +53,57 @@ export function RichTextEditor({ initialHtml, onChange, labelledBy }: RichTextEd
 
   return (
     <div className="overflow-hidden rounded-lg border border-line bg-charcoal/70 transition-colors focus-within:border-gold/60">
-      {editor && <Toolbar editor={editor} />}
+      {editor && <Toolbar editor={editor} canLink={!!linking} onLink={() => setPicking(true)} />}
+      {editor && linking && picking && <LinkBar editor={editor} linking={linking} onClose={() => setPicking(false)} />}
       <EditorContent editor={editor} className="codex-prose codex-editor px-4 py-3" />
     </div>
   )
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+// Choose the article to link the selected text to.
+function LinkBar({ editor, linking, onClose }: { editor: Editor; linking: ArticleLinking; onClose: () => void }) {
+  const close = () => {
+    onClose()
+    editor.commands.focus()
+  }
+  const linked = editor.isActive('codexLink')
+  return (
+    <div className="space-y-2 border-b border-line bg-charcoal/90 px-3 py-3">
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="mr-auto text-xs text-ash">{linked ? 'Change which article this text links to' : 'Link the selected text to a Codex article'}</p>
+        {linked && (
+          <button
+            type="button"
+            onClick={() => {
+              editor.chain().focus().unsetCodexLink().run()
+              onClose()
+            }}
+            className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-ash hover:bg-white/[0.06] hover:text-bone"
+          >
+            <Link2Off className="size-3.5" />
+            Remove link
+          </button>
+        )}
+        <button type="button" onClick={close} className="rounded-md px-2 py-1 text-xs text-ash hover:bg-white/[0.06] hover:text-bone">
+          Cancel
+        </button>
+      </div>
+      <EntryPicker
+        entries={linking.targets}
+        describe={linking.describe}
+        label="Search for the article to link to"
+        autoFocus
+        onEscape={close}
+        onSelect={(entry) => {
+          editor.chain().focus().setCodexLink(entry.id).run()
+          onClose()
+        }}
+      />
+    </div>
+  )
+}
+
+function Toolbar({ editor, canLink, onLink }: { editor: Editor; canLink: boolean; onLink: () => void }) {
   // Re-render the toolbar only when the active formatting changes.
   const state = useEditorState({
     editor,
@@ -58,6 +118,8 @@ function Toolbar({ editor }: { editor: Editor }) {
       bulletList: editor.isActive('bulletList'),
       orderedList: editor.isActive('orderedList'),
       blockquote: editor.isActive('blockquote'),
+      link: editor.isActive('codexLink'),
+      hasSelection: !editor.state.selection.empty,
       canUndo: editor.can().undo(),
       canRedo: editor.can().redo(),
     }),
@@ -76,6 +138,19 @@ function Toolbar({ editor }: { editor: Editor }) {
       { label: 'Underline', icon: Underline, active: state.underline, run: () => chain().toggleUnderline().run() },
       { label: 'Strikethrough', icon: Strikethrough, active: state.strike, run: () => chain().toggleStrike().run() },
     ],
+    ...(canLink
+      ? [
+          [
+            {
+              label: state.link ? 'Change article link' : state.hasSelection ? 'Link to a Codex article' : 'Link to a Codex article (select some text first)',
+              icon: Link2,
+              active: state.link,
+              disabled: !state.link && !state.hasSelection,
+              run: onLink,
+            },
+          ],
+        ]
+      : []),
     [
       { label: 'Bulleted list', icon: List, active: state.bulletList, run: () => chain().toggleBulletList().run() },
       { label: 'Numbered list', icon: ListOrdered, active: state.orderedList, run: () => chain().toggleOrderedList().run() },

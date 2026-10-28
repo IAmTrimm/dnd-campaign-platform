@@ -1,4 +1,4 @@
-import { ArrowLeft, Eye, EyeOff, Lock, PencilLine, Save, X } from 'lucide-react'
+import { ArrowLeft, Eye, EyeOff, Link2, Lock, PencilLine, Save, X } from 'lucide-react'
 import { useEffect, useMemo, useState, type KeyboardEvent } from 'react'
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog'
 import { navigateTo } from '../../hooks/useHashRoute'
@@ -167,7 +167,12 @@ export function ArticleEditor({ codex, entry }: ArticleEditorProps) {
               Article
             </span>
             <div className="mt-1.5">
-              <RichTextEditor initialHtml={entry?.description ?? ''} onChange={setDescription} labelledBy="article-text-label" />
+              <RichTextEditor
+                initialHtml={entry?.description ?? ''}
+                onChange={setDescription}
+                labelledBy="article-text-label"
+                linking={codex.articleLinking({ id: entry?.id, world_id: worldId })}
+              />
             </div>
           </div>
         </div>
@@ -236,6 +241,14 @@ export function ArticleEditor({ codex, entry }: ArticleEditorProps) {
             </div>
             <span className="mt-1.5 block text-xs text-faint">Press Enter or comma to add a tag.</span>
           </div>
+
+          <p className="flex gap-2 rounded-lg border border-line bg-white/[0.02] px-3 py-2.5 text-xs leading-relaxed text-faint">
+            <Link2 className="mt-0.5 size-3.5 shrink-0 text-gold" />
+            <span>
+              To link a phrase to another article, select it and use the link button in the toolbar. Relationships such as “Lives in” are added
+              from the article page{isNew ? ' once it’s saved' : ''}.
+            </span>
+          </p>
         </aside>
       </div>
 

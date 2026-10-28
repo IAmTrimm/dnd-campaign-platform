@@ -124,7 +124,7 @@ export function DmNotesPanel({ entry, codex }: { entry: Pick<CodexListItem, 'id'
               <span id="dm-notes-editor-label" className="sr-only">
                 {scope.label}
               </span>
-              <RichTextEditor key={scope.campaignId ?? 'owner'} initialHtml={note?.body ?? ''} onChange={setDraft} labelledBy="dm-notes-editor-label" />
+              <RichTextEditor key={scope.campaignId ?? 'owner'} initialHtml={note?.body ?? ''} onChange={setDraft} labelledBy="dm-notes-editor-label" linking={codex.articleLinking(entry)} />
               <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
@@ -147,7 +147,7 @@ export function DmNotesPanel({ entry, codex }: { entry: Pick<CodexListItem, 'id'
             </div>
           ) : note ? (
             <div className="space-y-3">
-              <RichTextViewer html={note.body} />
+              <RichTextViewer html={note.body} entryIds={codex.entryIds} />
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   type="button"

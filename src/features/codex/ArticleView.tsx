@@ -2,6 +2,7 @@ import { ArrowLeft, BookX, LoaderCircle, PencilLine, Tag } from 'lucide-react'
 import { EmptyState } from '../../components/ui/EmptyState'
 import { Panel } from '../../components/ui/Panel'
 import { DmNotesPanel } from './DmNotesPanel'
+import { RelatedEntries } from './RelatedEntries'
 import { RichTextViewer } from './RichTextViewer'
 import { StatusBadge } from './StatusBadge'
 import { categoryOf } from './types'
@@ -83,7 +84,7 @@ export function ArticleView({ id, codex }: { id: string; codex: CodexData }) {
 
           <div className="max-w-3xl">
             {entry.description ? (
-              <RichTextViewer html={entry.description} />
+              <RichTextViewer html={entry.description} entryIds={codex.entryIds} />
             ) : (
               <p className="text-faint italic">This article has no text yet.</p>
             )}
@@ -92,6 +93,7 @@ export function ArticleView({ id, codex }: { id: string; codex: CodexData }) {
           <p className="mt-10 text-xs text-faint">Last updated {updated}</p>
         </div>
       </article>
+      <RelatedEntries key={`related-${entry.id}`}entry={entry} codex={codex} />
       <DmNotesPanel key={entry.id} entry={entry} codex={codex} />
     </div>
   )

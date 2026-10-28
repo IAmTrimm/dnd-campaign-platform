@@ -82,8 +82,25 @@ export function useCodex() {
       return scopes
     }
 
-    return { canEdit, editableScopes, noteScopes, isEditor: editableScopes.length > 0 }
+    // Where a relationship between two articles can be recorded (mirrors the
+    // codex_links rules): a link involving a campaign article belongs to that
+    // campaign; a link between two world articles can be shared with every
+    // campaign (Owner only) or kept to one campaign. Articles from two different
+    // campaigns can't be linked.
+    type Ends = { world_id: string; campaign_id: string | null }
+    const linkScopes = (a: Ends, b: Ends): EditableScope[] => {
+      if (a.world_id !== b.world_id || (a.campaign_id && b.campaign_id && a.campaign_id !== b.campaign_id)) return []
+      const campaignId = a.campaign_id ?? b.campaign_id
+      return editableScopes.filter((s) => s.worldId === a.world_id && (!campaignId || s.campaignId === campaignId))
+    }
+    // Can this user add relationships to the article at all?
+    const canLink = (entry: Ends) => linkScopes(entry, { world_id: entry.world_id, campaign_id: null }).length > 0
+
+    return { canEdit, editableScopes, noteScopes, linkScopes, canLink, isEditor: editableScopes.length > 0 }
   }, [worlds, campaigns, dmCampaignIds, userId])
+
+  // Every article this user can read; links to anything else show as plain text.
+  const entryIds = useMemo(() => new Set(entries?.map((e) => e.id)), [entries])
 
   const scopeLabel = useCallback(
     (entry: { world_id: string; campaign_id: string | null }) => {
@@ -93,7 +110,18 @@ export function useCodex() {
     [campaigns, worlds],
   )
 
-  return { entries, worlds, campaigns, error, reload, scopeLabel, ...permissions }
+  // What an article's text can link to: any other article in the same world the
+  // writer can read. (Readers who can't open the target just see plain text.)
+  const articleLinking = useCallback(
+    (from: { id?: string; world_id: string }) => ({
+      targets: (entries ?? []).filter((e) => e.world_id === from.world_id && e.id !== from.id),
+      entryIds,
+      describe: scopeLabel,
+    }),
+    [entries, entryIds, scopeLabel],
+  )
+
+  return { entries, entryIds, worlds, campaigns, error, reload, scopeLabel, articleLinking, ...permissions }
 }
 
 export type CodexData = ReturnType<typeof useCodex>
